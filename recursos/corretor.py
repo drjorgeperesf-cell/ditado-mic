@@ -92,6 +92,8 @@ def comando_cli():
     # --safe-mode e' o que da a velocidade (2,3-3,7 s com ele x 11,7 s sem).
     # `--bare` exigiria API key = PROIBIDO.
     return [b, "-p", "--safe-mode", "--tools", "", "--no-chrome",
+            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
+            "--setting-sources", "", "--no-session-persistence",
             "--model", str(config.get("corretor_modelo", "sonnet")),
             "--system-prompt", CORRETOR_SYSTEM_PROMPT]
 
@@ -127,7 +129,7 @@ def revisar(texto: str, rodar=None):
     tmo = float(config.get("corretor_timeout_s", 20))
     exec_ = rodar or (lambda: proc_rodar(
         cmd, entrada=corretor_envelopar(texto), timeout=tmo,
-        env=_ambiente_cli()))
+        env=_ambiente_cli(), cwd=str(formatado.cwd_sessao())))
     try:
         r = exec_()
         if _credito_da_api_acabou(r, texto):
