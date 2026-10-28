@@ -1,0 +1,22 @@
+# Ditado Mic — Windows. Venv PRÓPRIA (.venv desta pasta), Python 3.14.5.
+# Travado em versões com roda (wheel) cp314/py3 conferida por
+#   pip download --no-deps --only-binary=:all:  em 20/09/2026.
+#
+# POR QUE CADA UM (nada entra sem justificativa — regra de ouro 8):
+#   sounddevice  captura de áudio do microfone (WASAPI/MME via PortAudio embutido na
+#                roda). Substitui o AVAudioEngine do Mac. Sem ele não há ditado.
+#   cffi         dependência OBRIGATÓRIA do sounddevice (ele é um binding cffi).
+#   pycparser    dependência obrigatória do cffi.
+#   pystray      ícone na bandeja + menu (substitui o NSStatusBar 🎤 do Mac).
+#   pillow       ícone da bandeja e desenho suave da cápsula com alpha nativo.
+#   six          dependência obrigatória do pystray.
+#
+# TUDO O MAIS é stdlib + ctypes de propósito: hook de teclado (WH_KEYBOARD_LL),
+# clipboard, SendInput, estilos de janela, pílula (tkinter), HTTP (http.client),
+# banco (sqlite3), painel web (http.server). Nada de PyQt/pyautogui/keyboard/psutil.
+sounddevice==0.5.6
+cffi==2.1.1
+pycparser==3.0
+pystray==0.19.5
+pillow==12.3.0
+six==1.17.0

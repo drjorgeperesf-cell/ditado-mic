@@ -1,0 +1,23 @@
+@echo off
+chcp 65001 >nul
+setlocal
+cd /d "%~dp0"
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8
+set "PY=%~dp0.venv\Scripts\python.exe"
+set "PYW=%~dp0.venv\Scripts\pythonw.exe"
+if not exist "%PY%" goto :sem_venv
+title Ditado Mic - painel
+rem Sobe o painel web em 127.0.0.1:7910 e abre a janela.
+"%PY%" "%~dp0_acoes\abrir_painel.py"
+timeout /t 3 >nul
+
+goto :fim
+:sem_venv
+echo.
+echo   ERRO: a venv desta pasta nao existe.
+echo   Esperava encontrar o python em .venv\Scripts\ aqui dentro.
+echo.
+pause
+exit /b 9
+:fim

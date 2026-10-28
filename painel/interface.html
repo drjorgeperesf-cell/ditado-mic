@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- O painel.py preenche o content= abaixo com o token da sessao, e SO na
+     request que apresentou um ticket valido (sem ticket vem vazio). O
+     app.js move o valor para o sessionStorage - que e escopado por PORTA,
+     ao contrario de cookie - e o manda em X-Painel-Sessao. NAO renomear o
+     __TOKEN_DE_SESSAO__ sem mudar MARCA_SESSAO no painel.py. -->
+<meta name="painel-sessao" content="__TOKEN_DE_SESSAO__">
+<title>Botao Wispr - Historico</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<a class="pular" href="#conteudo">Pular para o conteudo</a>
+
+<!-- ============================ CABECALHO ============================ -->
+<header class="topo" id="topo">
+  <div class="topo-faixa">
+    <h1 class="marca">
+      <span class="marca-icone">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V5.5a3.5 3.5 0 0 0-7 0V11a3.5 3.5 0 0 0 3.5 3.5z"/>
+          <path d="M18 11a.9.9 0 0 0-1.8 0 4.2 4.2 0 0 1-8.4 0A.9.9 0 0 0 6 11a6 6 0 0 0 5.1 5.93V19H9.4a.9.9 0 0 0 0 1.8h5.2a.9.9 0 0 0 0-1.8h-1.7v-2.07A6 6 0 0 0 18 11z"/>
+        </svg>
+      </span>
+      <span class="marca-nome">Botao Wispr</span>
+    </h1>
+
+    <div class="abas" role="tablist" aria-label="Telas do painel">
+      <button type="button" class="aba" id="aba-historico" role="tab"
+              aria-selected="true" aria-controls="tela-historico" tabindex="0">Historico</button>
+      <button type="button" class="aba" id="aba-saude" role="tab"
+              aria-selected="false" aria-controls="tela-saude" tabindex="-1">Saude</button>
+      <button type="button" class="aba" id="aba-insights" role="tab"
+              aria-selected="false" aria-controls="tela-insights" tabindex="-1">Insights</button>
+    </div>
+
+    <button type="button" class="veredito-topo" id="veredito-topo">
+      <span class="ponto ponto-neutro" id="veredito-ponto" aria-hidden="true"></span>
+      <span class="veredito-frase" id="veredito-texto">Verificando...</span>
+    </button>
+  </div>
+
+  <div class="regua" id="regua"></div>
+</header>
+
+<main id="conteudo">
+
+<!-- ============================ HISTORICO ============================ -->
+<section class="tela" id="tela-historico" role="tabpanel" aria-labelledby="aba-historico">
+
+  <div class="barra">
+    <div class="busca">
+      <span class="lupa" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" focusable="false">
+          <path d="M10.5 3a7.5 7.5 0 1 1-4.62 13.4l-3.14 3.15a1 1 0 1 1-1.42-1.42l3.15-3.14A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/>
+        </svg>
+      </span>
+      <input type="search" id="busca" autocomplete="off" spellcheck="false"
+             placeholder="Buscar no que voce falou" aria-label="Buscar no que voce falou">
+      <span class="chip" id="chip-busca" aria-hidden="true">/</span>
+    </div>
+
+    <div class="filtros">
+      <span class="filtro" id="filtro-dia-caixa">
+        <label class="sr-only" for="filtro-dia">Filtrar por dia</label>
+        <select id="filtro-dia">
+          <option value="">Qualquer dia</option>
+          <option value="hoje">Hoje</option>
+          <option value="ontem">Ontem</option>
+          <option value="outro">Escolher data...</option>
+        </select>
+      </span>
+
+      <span class="filtro filtro-data oculta" id="filtro-data-caixa">
+        <label class="sr-only" for="filtro-data">Data escolhida</label>
+        <input type="date" id="filtro-data">
+      </span>
+
+      <span class="filtro" id="filtro-app-caixa">
+        <label class="sr-only" for="filtro-app">Filtrar por app de destino</label>
+        <select id="filtro-app">
+          <option value="">Todos os apps</option>
+        </select>
+      </span>
+
+      <button type="button" class="limpar-filtros oculta" id="limpar-filtros">Limpar filtros</button>
+    </div>
+
+    <button type="button" class="botao botao-exportar" id="btn-exportar">Exportar</button>
+  </div>
+
+  <!-- caixa de confirmacao do Exportar: diz QUANTOS ditados vao no arquivo
+       (respeitando busca e filtros ativos) antes de baixar qualquer coisa -->
+  <div class="exportar-caixa oculta" id="exportar-caixa">
+    <p class="exportar-info" id="exportar-info"></p>
+    <div class="exportar-botoes">
+      <button type="button" class="botao" id="btn-exportar-md">Baixar .md</button>
+      <button type="button" class="botao" id="btn-exportar-txt">Baixar .txt</button>
+      <button type="button" class="botao" id="btn-exportar-cancelar">Cancelar</button>
+    </div>
+    <p class="exportar-resposta oculta" id="exportar-resposta"></p>
+  </div>
+
+  <p class="contagem" id="contagem"></p>
+
+  <div id="lista" class="lista"></div>
+
+  <div id="sentinela" class="sentinela" aria-hidden="true"></div>
+  <p class="fim-lista oculta" id="fim-lista">Fim do historico.</p>
+
+  <p class="rodape-atalhos">
+    <kbd>/</kbd> busca &nbsp;&middot;&nbsp; <kbd>esc</kbd> volta um passo
+    &nbsp;&middot;&nbsp; <kbd>ctrl 1</kbd> Historico &nbsp;&middot;&nbsp; <kbd>ctrl 2</kbd> Saude
+    &nbsp;&middot;&nbsp; <kbd>ctrl 3</kbd> Insights
+  </p>
+</section>
+
+<!-- ============================== SAUDE ============================== -->
+<section class="tela oculta" id="tela-saude" role="tabpanel" aria-labelledby="aba-saude">
+
+  <div class="faixa-veredito" id="faixa-veredito">
+    <span class="ponto ponto-grande ponto-neutro" id="faixa-ponto" aria-hidden="true"></span>
+    <div class="faixa-texto">
+      <h2 id="faixa-titulo">Verificando...</h2>
+      <p id="faixa-sub">Lendo o estado dos agentes, do motor de transcricao e da memoria.</p>
+    </div>
+  </div>
+
+  <p class="carimbo" id="carimbo">&nbsp;</p>
+
+  <div class="grupos" id="grupos"></div>
+
+  <div class="acoes">
+    <div class="acao">
+      <div class="acao-texto">
+        <strong>Reiniciar o whisper-server</strong>
+        <span>Use quando o motor estiver fora do ar ou muito lento. O ditado fica alguns
+              segundos sem transcrever. Nada mais e' tocado.</span>
+      </div>
+      <div class="acao-botoes">
+        <button type="button" class="botao" id="btn-reiniciar">Reiniciar o whisper-server</button>
+        <span class="confirmar oculta" id="confirmar-reiniciar">
+          <span class="confirmar-pergunta">Reiniciar agora?</span>
+          <button type="button" class="botao botao-perigo" id="btn-reiniciar-sim">Sim, reiniciar</button>
+          <button type="button" class="botao" id="btn-reiniciar-nao">Cancelar</button>
+        </span>
+      </div>
+      <p class="acao-resposta oculta" id="resposta-reiniciar"></p>
+    </div>
+
+    <div class="acao acao-discreta">
+      <div class="acao-texto">
+        <strong>Fechar o painel</strong>
+        <span>Encerra so este painel. O ditado continua funcionando. Para abrir de novo,
+              clique em PAINEL.bat.</span>
+      </div>
+      <div class="acao-botoes">
+        <button type="button" class="botao" id="btn-sair">Fechar o painel</button>
+      </div>
+      <p class="acao-resposta oculta" id="resposta-sair"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= INSIGHTS ============================= -->
+<section class="tela oculta" id="tela-insights" role="tabpanel" aria-labelledby="aba-insights">
+
+  <!-- aviso destacado: o banco e uma janela deslizante de 30 dias -->
+  <div class="aviso-retencao">
+    <div class="aviso-retencao-texto">
+      <h2>O historico guarda so os ultimos 30 dias</h2>
+      <p>O que passa de 30 dias e apagado pelo proprio app - o que era de junho
+         ja se foi, sem volta. O botao <strong>Exportar</strong>, na tela
+         Historico, salva tudo num arquivo antes que expire.</p>
+    </div>
+    <button type="button" class="botao" id="btn-ir-exportar">Exportar o historico agora</button>
+  </div>
+
+  <p class="carimbo" id="ins-carimbo">&nbsp;</p>
+
+  <div class="ins-tiles" id="ins-tiles"></div>
+
+  <section class="ins-bloco">
+    <h2 class="ins-titulo" id="ins-dias-titulo">Ditados por dia - ultimos 30 dias</h2>
+    <div class="grafico" id="grafico-dias"></div>
+    <p class="sr-only" id="grafico-dias-dados"></p>
+    <p class="ins-resumo" id="ins-dias-resumo"></p>
+  </section>
+
+  <div class="ins-colunas">
+    <section class="ins-bloco">
+      <h2 class="ins-titulo">Para onde voce dita</h2>
+      <div class="medidores" id="ins-apps"></div>
+    </section>
+
+    <section class="ins-bloco">
+      <h2 class="ins-titulo">Perfis de ditado</h2>
+      <div class="medidores" id="ins-perfis"></div>
+      <div id="ins-perfis-zero"></div>
+      <p class="ins-nota">O perfil e escolhido na hora de gravar:
+         Right Command = livre, com Shift = prontuario, com Option = casual.</p>
+    </section>
+  </div>
+</section>
+
+</main>
+
+<!-- =========================== BLOQUEIO 403 =========================== -->
+<div class="bloqueio oculta" id="bloqueio" role="alertdialog" aria-modal="true"
+     aria-labelledby="bloqueio-titulo" aria-describedby="bloqueio-texto" tabindex="-1">
+  <div class="bloqueio-caixa">
+    <h2 id="bloqueio-titulo">Esta sessao expirou</h2>
+    <p id="bloqueio-texto">Feche esta janela e abra o painel de novo pelo
+       <strong>PAINEL.bat</strong>, na pasta do Microfone. O ditado nao e' afetado.</p>
+  </div>
+</div>
+
+<!-- Moldes de icone clonados pelo app.js (SVG embutido: nada e' baixado). -->
+<div class="oculta" id="moldes" aria-hidden="true">
+  <svg id="molde-mic" viewBox="0 0 24 24" width="40" height="40" fill="currentColor" focusable="false">
+    <path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V5.5a3.5 3.5 0 0 0-7 0V11a3.5 3.5 0 0 0 3.5 3.5z"/>
+    <path d="M18 11a.9.9 0 0 0-1.8 0 4.2 4.2 0 0 1-8.4 0A.9.9 0 0 0 6 11a6 6 0 0 0 5.1 5.93V19H9.4a.9.9 0 0 0 0 1.8h5.2a.9.9 0 0 0 0-1.8h-1.7v-2.07A6 6 0 0 0 18 11z"/>
+  </svg>
+  <svg id="molde-seta" viewBox="0 0 24 24" width="14" height="14" focusable="false">
+    <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<div class="sr-only" id="viva" role="status" aria-live="polite"></div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
